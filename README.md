@@ -24,6 +24,6 @@
 - [ ] 联调验收
 
 ## 👥 团队成员 (Team)
-- **@zhu-siyuan(你的ID)** - Project Manager & Software
+- **@zhu-siyuan** - Project Manager & Software
 - **@HuangMin** - Hardware Engineer
 - **@QinYuying** - Mechanical Engineer
