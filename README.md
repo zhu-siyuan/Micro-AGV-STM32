@@ -25,5 +25,5 @@
 
 ## 👥 团队成员 (Team)
 - **@zhu-siyuan** - Project Manager & Software
-- **@HuangMin** - Hardware Engineer
-- **@QinYuying** - Mechanical Engineer
+- **HuangMin** - Hardware Engineer
+- **QinYuying** - Mechanical Engineer
