@@ -1,0 +1,24 @@
+--cpu Cortex-M3
+"micro-agv\startup_stm32f103xb.o"
+"micro-agv\main.o"
+"micro-agv\stm32f1xx_it.o"
+"micro-agv\stm32f1xx_hal_msp.o"
+"micro-agv\stm32f1xx_hal_gpio_ex.o"
+"micro-agv\stm32f1xx_hal_tim.o"
+"micro-agv\stm32f1xx_hal_tim_ex.o"
+"micro-agv\stm32f1xx_hal.o"
+"micro-agv\stm32f1xx_hal_rcc.o"
+"micro-agv\stm32f1xx_hal_rcc_ex.o"
+"micro-agv\stm32f1xx_hal_gpio.o"
+"micro-agv\stm32f1xx_hal_dma.o"
+"micro-agv\stm32f1xx_hal_cortex.o"
+"micro-agv\stm32f1xx_hal_pwr.o"
+"micro-agv\stm32f1xx_hal_flash.o"
+"micro-agv\stm32f1xx_hal_flash_ex.o"
+"micro-agv\stm32f1xx_hal_exti.o"
+"micro-agv\stm32f1xx_hal_uart.o"
+"micro-agv\system_stm32f1xx.o"
+--strict --scatter "Micro-AGV\Micro-AGV.sct"
+--summary_stderr --info summarysizes --map --load_addr_map_info --xref --callgraph --symbols
+--info sizes --info totals --info unused --info veneers
+--list "Micro-AGV.map" -o Micro-AGV\Micro-AGV.axf
