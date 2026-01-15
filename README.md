@@ -1,6 +1,5 @@
 # 🏎️ Micro-AGV-STM32 (工业级桌面移动机器人)
 
-![Status](https://img.shields.io/badge/Status-Developing-yellow) ![Hardware](https://img.shields.io/badge/Hardware-STM32F103-blue) ![License](https://img.shields.io/badge/License-MIT-green) ![Build](https://img.shields.io/badge/Build-Keil%20%7C%20VSCode-orange)
 
 > **"不仅仅是玩具，而是遵循工业设计标准开发的 Micro-AGV 移动平台。"**
 
@@ -24,7 +23,7 @@
 | :--- | :--- | :--- |
 | **主控 MCU** | STM32F103C8T6 | 生态成熟，IO 资源满足 PWM/UART/编码器需求 |
 | **电机驱动** | TB6612FNG | 双路 H 桥，高效率，低发热，体积小 |
-| **动力系统** | JGA25-370 (或 N20) | **带霍尔编码器**，支持 AB 相测速 (PID 基础) |
+| **动力系统** | JGA25-370| **带霍尔编码器**，支持 AB 相测速 (PID 基础) |
 | **电源系统** | 2×18650 (7.4V) | 配合 LM2596 稳压模块，抗干扰能力强 |
 | **通信模块** | HC-05 蓝牙 | 串口透传，兼容性好 |
 
@@ -72,18 +71,6 @@ Micro-AGV-STM32/
 ```
 ---
 
-## 📅 开发计划 (Roadmap)
-
-本项目采用 **T+Timeline** 管理，T 为核心物料到货日。
-
-- [x] **T-3**: 方案冻结，BOM 采购，GitHub 环境搭建
-- [ ] **T+0**: 物料到货，硬件/结构组启动
-- [ ] **T+3**: 结构素组，电路焊接，软件基础框架完成
-- [ ] **T+7**: **MVP 交付** (开环控制，蓝牙遥控跑通)
-- [ ] **T+14**: PID 闭环算法迭代，失效保护功能
-- [ ] **T+17**: 整车验收，技术文档汇总
-
----
 
 ## 👥 核心团队 (Team)
 
