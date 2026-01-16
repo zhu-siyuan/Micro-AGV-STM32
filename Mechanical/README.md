@@ -1,1 +1,1 @@
-这里存放 SolidWorks / CAD 结构设计源文件及 STL 打印文件。
+这里存放 SolidWorks 小车装配体所有文件。
