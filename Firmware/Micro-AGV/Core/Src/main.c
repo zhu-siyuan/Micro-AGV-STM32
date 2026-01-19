@@ -208,9 +208,13 @@ PID_t pid_R = {600.0f, 80.0f, 0.0f, 0.0f, 0.0f, 1500.0f};
 uint32_t last_time = 0;
 
 // 串口变量
+// 接收缓冲区，用于 HAL_UART_Receive_IT
 uint8_t rx_buffer[1];
+// 数据帧缓冲区，用于存储接收到的完整数据帧
 uint8_t data_buffer[10];
+// 数据帧当前接收到的字节数
 uint8_t data_index = 0;
+// 串口接收状态机
 #define STATE_WAIT_HEADER 0
 #define STATE_RECEIVE_BODY 1
 uint8_t rx_state = STATE_WAIT_HEADER;
@@ -219,6 +223,16 @@ uint8_t rx_state = STATE_WAIT_HEADER;
 #define MOTOR_L_POLARITY 1
 #define MOTOR_R_POLARITY 1
 
+// 运动模式定义
+#define MODE_SPEED 0x01 // 速度控制模式
+#define MODE_TURN_ANGLE 0x02 // 转向角度控制模式
+#define MODE_TURN_LEFT 0x03 // 左转模式
+#define MODE_TURN_RIGHT 0x04 // 右转模式
+#define MODE_ROTATE_LEFT 0x05 // 左自转模式
+#define MODE_ROTATE_RIGHT 0x06 // 右自转模式
+
+// 转向控制变量
+volatile float target_angle = 0.0f; // 目标转向角度 (度)
 /* USER CODE END 0 */
 
 /**
@@ -587,21 +601,75 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
     case STATE_RECEIVE_BODY:
       if (data_index < sizeof(data_buffer)) {
         data_buffer[data_index++] = received_byte;
-        if (data_index >= 8) {          // 接收完整一帧
-          if (data_buffer[1] == 0x01) { // 功能位校验
-            int8_t speed_cmd = (int8_t)data_buffer[2];
-            float target = speed_cmd / 100.0f; // 解析速度
-
-            // 更新最终目标速度
-            final_speed_L = target;
-            final_speed_R = target;
+        // 假设数据帧格式为：A5 [功能码] [数据1] [数据2] ... [数据N] [校验和]
+        // 速度控制帧：A5 01 [速度值] 00 00 00 00 00 [校验和] (共9字节，速度值1字节)
+        // 转向角度控制帧：A5 02 [角度高字节] [角度低字节] 00 00 00 00 [校验和] (共9字节，角度值2字节)
+        // 左转/右转/左自转/右自转帧：A5 0X [速度值] 00 00 00 00 00 [校验和] (共9字节，速度值1字节)
+        // 这里简化处理，只检查到第9个字节
+        if (data_index >= 9) { // 接收完整一帧 (帧头 + 功能码 + 6字节数据 + 校验和)
+          uint8_t function_code = data_buffer[1];
+          uint8_t checksum = 0;
+          for (int i = 0; i < 8; i++) { // 计算校验和 (从帧头到数据N)
+            checksum += data_buffer[i];
           }
+
+          if (checksum == data_buffer[8]) { // 校验和正确
+            if (function_code == MODE_SPEED) { // 速度控制模式
+              // 数据格式: A5 01 [速度值] 00 00 00 00 00 [校验和]
+              // 速度值范围 -100 到 100，对应 -1.0m/s 到 1.0m/s
+              int8_t speed_cmd = (int8_t)data_buffer[2];
+              float target = speed_cmd / 100.0f; // 解析速度，转换为 m/s
+
+              // 更新最终目标速度
+              final_speed_L = target;
+              final_speed_R = target;
+
+            } else if (function_code == MODE_TURN_ANGLE) { // 转向角度控制模式
+              // 数据格式: A5 02 [角度高字节] [角度低字节] 00 00 00 00 [校验和]
+              // 角度值范围 -36000 到 36000，对应 -360.00度 到 360.00度
+              // 实际发送时，将角度值乘以100，然后拆分成高低字节发送
+              // 例如：发送 90.50 度，则发送 9050，高字节为 (9050 >> 8) & 0xFF，低字节为 9050 & 0xFF
+              int16_t angle_cmd = (int16_t)((data_buffer[2] << 8) | data_buffer[3]);
+              target_angle = (float)angle_cmd / 100.0f; // 解析角度，转换为度
+
+              // 在这里，你可以根据 target_angle 设置左右轮的差速，实现转向
+              // 例如：
+              // 如果 target_angle > 0，左转，左轮速度减小，右轮速度增大
+              // 如果 target_angle < 0，右转，左轮速度增大，右轮速度减小
+              // 具体的转向逻辑需要在 Control_Loop 中实现，这里只是接收指令
+              // 为了简化，这里暂时只更新 target_angle，Control_Loop 会根据此值进行调整
+              // 注意：这里只是一个示例，实际的转向控制可能需要更复杂的算法
+            } else if (function_code == MODE_TURN_LEFT) { // 左转模式
+              int8_t speed_cmd = (int8_t)data_buffer[2];
+              float target_speed = speed_cmd / 100.0f;
+              final_speed_L = target_speed * 0.5f; // 左轮减速
+              final_speed_R = target_speed * 1.0f; // 右轮保持
+            } else if (function_code == MODE_TURN_RIGHT) { // 右转模式
+              int8_t speed_cmd = (int8_t)data_buffer[2];
+              float target_speed = speed_cmd / 100.0f;
+              final_speed_L = target_speed * 1.0f; // 左轮保持
+              final_speed_R = target_speed * 0.5f; // 右轮减速
+            } else if (function_code == MODE_ROTATE_LEFT) { // 左自转模式
+              int8_t speed_cmd = (int8_t)data_buffer[2];
+              float target_speed = speed_cmd / 100.0f;
+              final_speed_L = -target_speed; // 左轮反转
+              final_speed_R = target_speed;  // 右轮正转
+            } else if (function_code == MODE_ROTATE_RIGHT) { // 右自转模式
+              int8_t speed_cmd = (int8_t)data_buffer[2];
+              float target_speed = speed_cmd / 100.0f;
+              final_speed_L = target_speed;  // 左轮正转
+              final_speed_R = -target_speed; // 右轮反转
+            }
+          }
+
           data_index = 0;
           rx_state = STATE_WAIT_HEADER;
         }
-      } else {
+
+      } else { // 数据溢出，重新等待帧头
         data_index = 0;
-        rx_state = STATE_WAIT_HEADER;
+        data_buffer[data_index++] = received_byte;
+        rx_state = STATE_RECEIVE_BODY;
       }
       break;
     }
